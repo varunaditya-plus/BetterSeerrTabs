@@ -34,6 +34,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 this.bindRequestHandler();
                 this.bindCardClickHandler();
                 this.bindViewMoreHandler();
+                this.bindRetryHandler();
                 this.loadDisplaySettings();
                 this.setupSearchIntegration();
             }
@@ -207,6 +208,17 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             });
         },
 
+        renderRetryState: function (message, retryTarget) {
+            return `
+                <div class="seerrfin-empty-row seerrfin-retry-state" role="alert">
+                    <span class="seerrfin-retry-message">${this.escapeHtml(message)}</span>
+                    <button type="button" class="seerrfin-retry-button raised emby-button" data-seerrfin-retry="${this.escapeHtml(retryTarget)}">
+                        <span class="material-icons notranslate" aria-hidden="true">refresh</span>
+                        <span data-seerrfin-retry-label>Try again</span>
+                    </button>
+                </div>`;
+        },
+
         renderIfContainerVisible: function (type) {
             const selector = type === 'movies' ? '.seerrfin-movies-sections' : '.seerrfin-tv-sections';
             const container = this.findActiveContainer(selector);
@@ -331,7 +343,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         return;
                     }
                     if (!anySuccess && !isStale()) {
-                        container.innerHTML = `<div class="seerrfin-empty-row">Failed to load discovery rows. Check Seerr settings and that your Jellyfin user is linked in Seerr.</div>`;
+                        container.innerHTML = self.renderRetryState(
+                            'Failed to load discovery rows. Check Seerr settings and that your Jellyfin user is linked in Seerr.',
+                            'discovery'
+                        );
                     }
                     finishLoading();
                 };
@@ -405,7 +420,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 console.error('SeerrFin:', err);
                 container.dataset.seerrfinLoading = 'false';
                 container.dataset.seerrfinLoaded = 'true';
-                container.innerHTML = `<div class="seerrfin-empty-row">Failed to load discovery rows. Check Seerr settings and that your Jellyfin user is linked in Seerr.</div>`;
+                container.innerHTML = self.renderRetryState(
+                    'Failed to load discovery rows. Check Seerr settings and that your Jellyfin user is linked in Seerr.',
+                    'discovery'
+                );
             });
         },
 
@@ -1888,6 +1906,36 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 if (browsePath && name) {
                     self.openGridView(boxContainer, name, browsePath);
                 }
+            }, true);
+        },
+
+        bindRetryHandler: function () {
+            const self = this;
+
+            document.addEventListener('click', function (e) {
+                const button = e.target.closest('[data-seerrfin-retry="discovery"]');
+                if (!button) {
+                    return;
+                }
+
+                const container = button.closest('.seerrfin-movies-sections, .seerrfin-tv-sections');
+                if (!container) {
+                    return;
+                }
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                button.disabled = true;
+                const label = button.querySelector('[data-seerrfin-retry-label]');
+                if (label) {
+                    label.textContent = 'Retrying…';
+                }
+
+                container.dataset.seerrfinLoading = 'false';
+                delete container.dataset.seerrfinLoaded;
+                const type = container.classList.contains('seerrfin-movies-sections') ? 'movies' : 'tv';
+                self.loadTab(type, container);
             }, true);
         },
 

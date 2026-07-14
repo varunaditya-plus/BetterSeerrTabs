@@ -41,6 +41,54 @@
     font-style: italic;
 }
 
+.seerrfin-retry-state {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.8em;
+    padding-top: 1em;
+    padding-bottom: 1em;
+    font-style: normal;
+}
+
+.seerrfin-retry-message {
+    max-width: 42em;
+}
+
+.seerrfin-retry-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4em;
+    min-height: 2.4em;
+    margin: 0;
+    padding: 0.55em 0.95em;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 0.2em 0.75em rgba(0, 0, 0, 0.22);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.seerrfin-retry-button:hover:not(:disabled),
+.seerrfin-retry-button:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 0.35em 1em rgba(0, 0, 0, 0.3);
+}
+
+.seerrfin-retry-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.seerrfin-retry-button:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
+.seerrfin-retry-button .material-icons {
+    font-size: 1.15em;
+}
+
 .seerrfin-loading-row {
     padding: 1em 1.5em;
     color: var(--secondaryTextColor);
@@ -114,6 +162,10 @@
     .seerrfin-skeleton-card::after,
     .seerrfin-section-fadein {
         animation: none;
+    }
+
+    .seerrfin-retry-button {
+        transition: none;
     }
 }
 
