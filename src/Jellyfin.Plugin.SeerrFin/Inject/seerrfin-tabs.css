@@ -109,6 +109,14 @@
     animation: seerrfin-fadein 0.2s ease-out;
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .seerrfin-skeleton-title::after,
+    .seerrfin-skeleton-card::after,
+    .seerrfin-section-fadein {
+        animation: none;
+    }
+}
+
 .seerrfin-poster-section .sectionTitleContainer-cards {
     display: flex;
     align-items: baseline;
