@@ -1913,13 +1913,8 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const self = this;
 
             document.addEventListener('click', function (e) {
-                const button = e.target.closest('[data-seerrfin-retry="discovery"]');
+                const button = e.target.closest('[data-seerrfin-retry]');
                 if (!button) {
-                    return;
-                }
-
-                const container = button.closest('.seerrfin-movies-sections, .seerrfin-tv-sections');
-                if (!container) {
                     return;
                 }
 
@@ -1932,10 +1927,26 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     label.textContent = 'Retrying…';
                 }
 
-                container.dataset.seerrfinLoading = 'false';
-                delete container.dataset.seerrfinLoaded;
-                const type = container.classList.contains('seerrfin-movies-sections') ? 'movies' : 'tv';
-                self.loadTab(type, container);
+                const retryTarget = button.getAttribute('data-seerrfin-retry');
+                if (retryTarget === 'discovery') {
+                    const container = button.closest('.seerrfin-movies-sections, .seerrfin-tv-sections');
+                    if (!container) {
+                        return;
+                    }
+
+                    container.dataset.seerrfinLoading = 'false';
+                    delete container.dataset.seerrfinLoaded;
+                    const type = container.classList.contains('seerrfin-movies-sections') ? 'movies' : 'tv';
+                    self.loadTab(type, container);
+                    return;
+                }
+
+                if (retryTarget === 'grid') {
+                    const gridView = button.closest('[data-seerrfin-grid-view]');
+                    if (gridView) {
+                        self.loadMoreGridItems(gridView, true);
+                    }
+                }
             }, true);
         },
 
@@ -2164,6 +2175,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
             gridView.dataset.loading = 'true';
             if (isInitial) {
+                const retryState = itemsContainer.querySelector('.seerrfin-retry-state');
+                if (retryState) {
+                    retryState.remove();
+                }
                 status.textContent = 'Loading...';
                 status.style.display = '';
             } else {
@@ -2240,7 +2255,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 loadMoreBtn.disabled = false;
                 console.error('SeerrFin grid load failed:', err);
                 if (loadedCount === 0) {
-                    itemsContainer.innerHTML = `<div class="seerrfin-empty-row">Failed to load items.</div>`;
+                    itemsContainer.innerHTML = self.renderRetryState('Failed to load items.', 'grid');
                 }
                 if (useNativeCards) {
                     window.seerrFinNativeUi.updateGridChrome(gridView);
