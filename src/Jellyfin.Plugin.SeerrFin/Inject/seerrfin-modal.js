@@ -366,7 +366,10 @@ window.seerrFinLog = window.seerrFinLog || {
             5: 'Available',
             7: 'Blocklisted'
         };
-        return { requested: true, label: labels[status] || 'Already requested' };
+        const jellyfinItemId = (status === 4 || status === 5)
+            ? ((info && (is4k ? info.jellyfinMediaId4k : info.jellyfinMediaId)) || null)
+            : null;
+        return { requested: true, label: labels[status] || 'Already requested', jellyfinItemId: jellyfinItemId };
     }
 
     function markRequestButton(is4k, label) {
@@ -379,6 +382,32 @@ window.seerrFinLog = window.seerrFinLog || {
         }
         btn.disabled = true;
         btn.textContent = label || 'Already requested';
+    }
+
+    function navigateToJellyfinItem(itemId) {
+        if (!itemId || typeof ApiClient === 'undefined') {
+            return;
+        }
+
+        function openDetails(id, item) {
+            if (window.AppRouter && typeof AppRouter.showItem === 'function') {
+                AppRouter.showItem(item || { Id: id, ServerId: ApiClient.serverId() });
+                return;
+            }
+
+            if (window.Dashboard && typeof Dashboard.navigate === 'function') {
+                Dashboard.navigate('details?id=' + encodeURIComponent(id));
+            }
+        }
+
+        ApiClient.getItem(ApiClient.getCurrentUserId(), itemId)
+            .then(function (item) {
+                openDetails(itemId, item);
+            })
+            .catch(function (err) {
+                log.warn('Jellyfin item lookup failed for ' + itemId, err);
+                openDetails(itemId);
+            });
     }
 
     function fetchJustWatchQualities(mediaId, mediaType) {
@@ -1042,6 +1071,13 @@ window.seerrFinLog = window.seerrFinLog || {
             </div>`;
     }
 
+    function requestButtonExtraAttrs(state) {
+        if (state.jellyfinItemId) {
+            return ` data-jellyfin-item-id="${escapeHtml(state.jellyfinItemId)}"`;
+        }
+        return state.requested ? ' disabled' : '';
+    }
+
     function renderDetails(data, mediaId, mediaType) {
         const title = data.title || data.name || 'Details';
         const overview = data.overview || '';
@@ -1094,9 +1130,9 @@ window.seerrFinLog = window.seerrFinLog || {
                                     <div class="bst-content">
                                         <div class="bst-actions-row">
                                             <div class="bst-actions-left">
-                                                <button type="button" class="bst-btn-request" data-action="request"${requestState.requested ? ' disabled' : ''}>${escapeHtml(requestState.label)}</button>
+                                                <button type="button" class="bst-btn-request" data-action="request"${requestButtonExtraAttrs(requestState)}>${escapeHtml(requestState.label)}</button>
                                                 ${getRequestModalAdvanced().showRequest4kButton !== false
-                                                    ? `<button type="button" class="bst-btn-request-4k" data-action="request-4k"${request4kState.requested ? ' disabled' : ''}>${escapeHtml(request4kState.label)}</button>`
+                                                    ? `<button type="button" class="bst-btn-request-4k" data-action="request-4k"${requestButtonExtraAttrs(request4kState)}>${escapeHtml(request4kState.label)}</button>`
                                                     : ''}
                                                 ${trailerKey
                                                     ? `<button type="button" class="bst-btn-trailer" data-action="trailer" data-trailer-key="${escapeHtml(trailerKey)}">Trailer</button>`
@@ -1161,14 +1197,26 @@ window.seerrFinLog = window.seerrFinLog || {
         }
 
         const requestBtn = root.querySelector('[data-action="request"]');
-        if (requestBtn && !requestBtn.disabled) {
+        const requestItemId = requestBtn && requestBtn.getAttribute('data-jellyfin-item-id');
+        if (requestBtn && requestItemId) {
+            requestBtn.addEventListener('click', function () {
+                closeDetailsModal();
+                navigateToJellyfinItem(requestItemId);
+            });
+        } else if (requestBtn && !requestBtn.disabled) {
             requestBtn.addEventListener('click', function () {
                 openQualityModal(mediaId, mediaType, title);
             });
         }
 
         const request4kBtn = root.querySelector('[data-action="request-4k"]');
-        if (request4kBtn && !request4kBtn.disabled) {
+        const request4kItemId = request4kBtn && request4kBtn.getAttribute('data-jellyfin-item-id');
+        if (request4kBtn && request4kItemId) {
+            request4kBtn.addEventListener('click', function () {
+                closeDetailsModal();
+                navigateToJellyfinItem(request4kItemId);
+            });
+        } else if (request4kBtn && !request4kBtn.disabled) {
             request4kBtn.addEventListener('click', function () {
                 openQualityModal(mediaId, mediaType, title, undefined, true);
             });
