@@ -3086,6 +3086,8 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             if (!searchPage || !input || !query || !self.isSearchSettingEnabled()) {
                 self.removeSearchSection();
                 self._lastSearchQuery = null;
+                self._lastSearchItems = null;
+                self._activeSearchToken = null;
                 return;
             }
 
@@ -3151,11 +3153,17 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 return;
             }
 
-            if (self._lastSearchQuery === query && document.querySelector('.seerrfin-search-section')) {
+            if (self._lastSearchQuery === query) {
+                if (!searchPage.querySelector('.seerrfin-search-section') &&
+                    Array.isArray(self._lastSearchItems) &&
+                    self._lastSearchItems.length) {
+                    self.renderSearchSection(searchPage, query, self._lastSearchItems);
+                }
                 return;
             }
 
             self._lastSearchQuery = query;
+            self._lastSearchItems = null;
             const token = Date.now().toString(36) + Math.random().toString(36).slice(2);
             self._activeSearchToken = token;
 
@@ -3178,9 +3186,11 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     return;
                 }
 
+                self._lastSearchItems = result.items;
                 self.renderSearchSection(currentPage, query, result.items);
             }).catch(function (err) {
                 if (self._activeSearchToken === token) {
+                    self._lastSearchItems = [];
                     log.warn('search failed for "' + query + '"', err);
                     self.removeSearchSection();
                 }
