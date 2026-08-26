@@ -345,7 +345,7 @@ public sealed class ServarrProgressService
             return BuildLibraryProgress(false, true, false, 0, seriesOpenUrl);
         }
 
-        return BuildLibraryProgress(false, false, false, 0, seriesOpenUrl);
+        return BuildLibraryProgress(false, anyMonitored, false, 0, seriesOpenUrl);
     }
 
     private static ServarrProgressInfo BuildQueueProgress(IReadOnlyCollection<JObject> queueItems, string baseUrl, JObject? media, bool isMovie)
